@@ -5,6 +5,8 @@ certifi==2025.8.3
 charset-normalizer==3.4.2
 colorama==0.4.6
 Django==5.2.5
+djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.1
 google-ai-generativelanguage==0.6.15
 google-api-core==2.25.1
 google-api-python-client==2.178.0
@@ -27,6 +29,7 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pydantic==2.11.7
 pydantic_core==2.33.2
+PyJWT==2.10.1
 pymilvus==2.6.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
