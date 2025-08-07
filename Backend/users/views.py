@@ -114,3 +114,67 @@ class LogoutAPIView(APIView):
                 {"errors": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+        
+
+class UserUpdateAPIView(APIView):
+    permission_classes = [IsAuthenticated]  # Requires authentication
+
+    def put(self, request, user_id=None, *args, **kwargs):  # Handle PUT requests
+        try:
+            # Validate request body exists
+            if not request.data:
+                return Response(
+                    {"errors": "The request body is empty."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Validate request format
+            if not isinstance(request.data, QueryDict) or not isinstance(
+                request.data, dict
+            ):
+                return Response(
+                    {
+                        "errors": "Invalid request format. The request body must be a (multipart/form-data) or json of field: data pairs."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Convert QueryDict to dict if needed
+            if isinstance(request.data, QueryDict):
+                user_data = request.data.dict()
+            else:
+                user_data = request.data
+
+            user = request.user  # Get current user
+
+            # Remove unchanged fields from update data
+            if "username" in user_data and user_data["username"] == user.username:
+                del user_data["username"]
+
+            # Initialize serializers for validation
+            user_serializer = CustomUserSerializer(user, data=user_data, partial=True)
+            user_valid = user_serializer.is_valid()  # Validate user data
+
+            if user_valid:
+
+                # Save updates
+                user_serializer.save()
+
+                return Response(  # Return success response
+                    {
+                        "message": "User information has been updated successfully.",
+                        "user": user_serializer.data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+            else:  # Return validation errors if any
+                errors = {
+                    "errors": user_serializer.errors,
+                }
+                return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+
+            return Response(
+                {"errors": "An unexpected error occurred."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
