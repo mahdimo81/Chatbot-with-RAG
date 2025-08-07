@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -109,7 +110,8 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = "Asia/Tehran"
 
 USE_I18N = True
 
@@ -128,3 +130,24 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # User Authentication
 AUTH_USER_MODEL = "users.CustomUser"
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "users.authentication.CustomJWTAuthentication",
+        # "rest_framework.authentication.SessionAuthentication",
+    ),
+}
+
+# SimpleJWT configuration
+ACCESS_TOKEN_LIFETIME_CONS = 20
+REFRESH_TOKEN_LIFETIME_CONS = 40
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=ACCESS_TOKEN_LIFETIME_CONS
+    ),  # Default is 5 minutes
+    "REFRESH_TOKEN_LIFETIME": timedelta(
+        minutes=REFRESH_TOKEN_LIFETIME_CONS
+    ),  # Default is 1 day
+    "ROTATE_REFRESH_TOKENS": True,  # Optional: Generates a new refresh token on refresh
+    "BLACKLIST_AFTER_ROTATION": True,  # Optional: Prevents reuse of old refresh tokens
+}
