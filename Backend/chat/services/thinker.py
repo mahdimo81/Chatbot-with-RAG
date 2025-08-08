@@ -6,7 +6,7 @@ class ChatThinker:
     def __init__(self):
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key="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",
+            api_key="",
         )
         
     def analyze_message(self, user_message):
