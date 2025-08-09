@@ -1,0 +1,13 @@
+grpcio==1.74.0
+milvus==2.2.16
+numpy==2.3.2
+pandas==2.3.1
+protobuf==5.27.2
+pymilvus==2.6.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.1.1
+pytz==2025.2
+setuptools==80.9.0
+six==1.17.0
+tzdata==2025.2
+ujson==5.10.0
