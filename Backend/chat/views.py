@@ -2,8 +2,8 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from .serializers import ChatInputSerializer, ConversationSerializer, MessageSerializer
-from .models import Conversation, Message
+from .serializers import ChatInputSerializer, ConversationSerializer
+from .models import Conversation
 from .services.thinker import ChatThinker
 
 class ChatView(APIView):
@@ -17,8 +17,8 @@ class ChatView(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         conversation_id = serializer.validated_data.get('conversation_id')
-
         user_message = serializer.validated_data['message']
+        seprator = "<<i!***MS***!i>>"
         
         # Step 2: Think about it and create response
         thinker = ChatThinker()
@@ -28,19 +28,16 @@ class ChatView(APIView):
         if conversation_id:
             try:
                 conversation = Conversation.objects.get(id=conversation_id, user=user)
+                updated_texts = f"{conversation.texts}{seprator}{user_message}{seprator}{response_text}"
+                conversation.texts = updated_texts
+                conversation.save()
             except Conversation.DoesNotExist:
                 return Response({"detail": "Conversation not found."}, status=status.HTTP_404_NOT_FOUND)
         else:
-            conversation = Conversation.objects.create(user=user)
+            texts = f"{user_message}{seprator}{response_text}"
+            conversation = Conversation.objects.create(user=user, texts=texts)
 
-        # Step 4: Save message and its reply
-        Message.objects.create(
-            conversation=conversation,
-            user_message=user_message,
-            model_response=response_text,
-        )
-
-        # Step 5: Serialize and return response
+        # Step 4: Serialize and return response
         conversation_serializer = ConversationSerializer(conversation)
         return Response({
             "conversation": conversation_serializer.data,

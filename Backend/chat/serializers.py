@@ -1,17 +1,10 @@
 from rest_framework import serializers
-from .models import Conversation, Message
-
-class MessageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Message
-        fields = ['id', 'user_message', 'model_response', 'created_at']
+from .models import Conversation
 
 class ConversationSerializer(serializers.ModelSerializer):
-    messages = MessageSerializer(many=True, read_only=True)
-    
     class Meta:
         model = Conversation
-        fields = ['id', 'created_at', 'updated_at', 'messages']
+        fields = ['id', 'texts', 'created_at', 'updated_at']
 
 class ChatInputSerializer(serializers.Serializer):
     message = serializers.CharField()
