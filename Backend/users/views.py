@@ -19,7 +19,7 @@ class UserCreateAPIView(APIView):
             # Check for empty request body
             if not request.data:
                 return Response(
-                    {"errors": "The request body is empty."},
+                    {"detail": "The request body is empty."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -29,7 +29,7 @@ class UserCreateAPIView(APIView):
             ):
                 return Response(
                     {
-                        "errors": "Invalid request format. Request body must be a (multipart/form-data) or json of field: data pairs."
+                        "detail": "Invalid request format. Request body must be a (multipart/form-data) or json of field: data pairs."
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -57,12 +57,12 @@ class UserCreateAPIView(APIView):
                 )
             except ValidationError as e:  # Handle validation errors
                 return Response(
-                    {"errors": e.detail}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": e.detail}, status=status.HTTP_400_BAD_REQUEST
                 )
 
         except Exception as e:
             return Response(
-                {"errors": "An unexpected error occurred."},
+                {"detail": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -80,7 +80,7 @@ class LogoutAPIView(APIView):
         try:
             if not request.data:
                 return Response(
-                    {"errors": "The request body is empty."},
+                    {"detail": "The request body is empty."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -105,13 +105,13 @@ class LogoutAPIView(APIView):
             
             except Exception as e:  # Handle possible errors
                 return Response(
-                    {"errors": f"{e}"}, status=status.HTTP_400_BAD_REQUEST
+                    {"detail": f"{e}"}, status=status.HTTP_400_BAD_REQUEST
                 )  # Return bad request response
             
         except Exception as e:
 
             return Response(
-                {"errors": "An unexpected error occurred."},
+                {"detail": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         
@@ -124,7 +124,7 @@ class UserUpdateAPIView(APIView):
             # Validate request body exists
             if not request.data:
                 return Response(
-                    {"errors": "The request body is empty."},
+                    {"detail": "The request body is empty."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -134,7 +134,7 @@ class UserUpdateAPIView(APIView):
             ):
                 return Response(
                     {
-                        "errors": "Invalid request format. The request body must be a (multipart/form-data) or json of field: data pairs."
+                        "detail": "Invalid request format. The request body must be a (multipart/form-data) or json of field: data pairs."
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
@@ -169,12 +169,12 @@ class UserUpdateAPIView(APIView):
                 )
             else:  # Return validation errors if any
                 errors = {
-                    "errors": user_serializer.errors,
+                    "detail": user_serializer.errors,
                 }
                 return Response(errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
 
             return Response(
-                {"errors": "An unexpected error occurred."},
+                {"detail": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
