@@ -46,8 +46,10 @@ export default function ChatPage() {
 
   return (
     <>
+    <div className="chat-container">
       <ChatMessages messages={messages} />
       {isTyping && <TypingIndicator />}
+    </div>
       <ChatInput onSend={handleSend} />
     </>
   );

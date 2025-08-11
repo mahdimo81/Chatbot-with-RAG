@@ -60,6 +60,7 @@ class ChatThinker:
         retrieval_response = completion.choices[0].message.content if completion.choices[0].message.content != 'NO_DATA' else None
 
         return extracted_data, retrieval_response
+        
     def create_title(self, user_message):
         title_prompt = f"""
         Without including any explanations, create a title for the following message.
