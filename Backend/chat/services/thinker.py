@@ -60,7 +60,20 @@ class ChatThinker:
         retrieval_response = completion.choices[0].message.content if completion.choices[0].message.content != 'NO_DATA' else None
 
         return extracted_data, retrieval_response
-    
+    def create_title(self, user_message):
+        title_prompt = f"""
+        Without including any explanations, create a title for the following message.
+        The title should be a single sentence that captures the main idea of the message less than 10 words.
+        The title should be in the english language.
+        Message: {user_message}
+        """
+        completion = self.client.chat.completions.create(
+            model="meta-llama/llama-3.3-70b-instruct",
+            messages=[{"role": "user", "content": title_prompt}],
+        )
+        title_response = completion.choices[0].message.content
+        return title_response
+
     def compare(self, old_information, new_informations):
         compare_prompt = f"""
         Without including any explanations, Compare these informations.
@@ -127,7 +140,6 @@ class ChatThinker:
                     embeddings.tolist()
                 ]
                 insert_result = apps.get_app_config('chat').collection.insert(data)
-                print("New information inserted.")
                 
             return information_to_save
 

@@ -35,6 +35,10 @@ class ChatView(APIView):
 
         # Step 2: Think about it and create response
         thinker = ChatThinker()
+        title = thinker.create_title(user_message)
+        title_words = title.split(" ")[:10]
+        conversation.title = " ".join(title_words)
+        
         response_text = thinker.process_message(user.id, user_message)
 
         # Step 3: Manage conversation
