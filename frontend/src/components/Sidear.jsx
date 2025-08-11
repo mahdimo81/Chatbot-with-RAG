@@ -3,7 +3,7 @@ import "../sidebar.css";
 
 export default function Sidebar({ isOpen, onToggle, conversations, onSelect }) {
   return (
-    <div className={`sidebar ${isOpen ? "open" : "closed"}`}>
+    <div className={"sidebar"}>
       <div className="sidebar-content">
         {conversations.map((conv, i) => (
           <div
@@ -16,9 +16,7 @@ export default function Sidebar({ isOpen, onToggle, conversations, onSelect }) {
         ))}
       </div>
 
-      <button className="toggle-button" onClick={onToggle}>
-        {isOpen ? "Close Sidebar" : "Open Sidebar"}
-      </button>
+    
     </div>
   );
 }
