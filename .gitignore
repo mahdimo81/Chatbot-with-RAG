@@ -14,6 +14,7 @@ milvus_data/
 *.bak
 *.swp
 *~
+*.csv
 
 # Environments
 .env
