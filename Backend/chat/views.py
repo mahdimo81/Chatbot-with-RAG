@@ -16,7 +16,7 @@ class ChatView(APIView):
         serializer = ChatInputSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
         conversation_id = serializer.validated_data.get("conversation_id")
         if conversation_id:
             try:
