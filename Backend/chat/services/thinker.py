@@ -10,7 +10,7 @@ class ChatThinker:
     def __init__(self):
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key="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",
+            api_key="",
         )
         
     def create_title(self, user_message):
@@ -107,15 +107,14 @@ class ChatThinker:
         New information:
         {new_information}
         """
-        print("old info:", old_information)
-        print("new info:", new_information)
+
         completion = self.client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct",
             messages=[{"role": "user", "content": compare_prompt}],
             temperature=0.0  # Add this for more deterministic responses
         )
         response = completion.choices[0].message.content if completion.choices[0].message.content != "NO_DATA" else None
-        print("Response:", response)
+
         return response
     
     def store_information(self, user_id, extracted_data):

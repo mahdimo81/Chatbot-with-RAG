@@ -8,3 +8,4 @@ class ConversationSerializer(serializers.ModelSerializer):
 
 class ChatInputSerializer(serializers.Serializer):
     message = serializers.CharField()
+    conversation_id = serializers.IntegerField()
