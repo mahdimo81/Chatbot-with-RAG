@@ -1,3 +1,4 @@
+from hmac import new
 from openai import OpenAI
 import datetime
 from django.apps import apps
@@ -12,36 +13,55 @@ class ChatThinker:
             api_key="",
         )
         
+    def create_title(self, user_message):
+        title_prompt = f"""
+        Without including any explanations, create a title for the following message.
+        The title should be a single sentence that captures the main idea of the message less than 10 words.
+        The title should be in the english language.
+        Message: {user_message}
+        """
+        completion = self.client.chat.completions.create(
+            model="meta-llama/llama-3.3-70b-instruct",
+            messages=[{"role": "user", "content": title_prompt}],
+        )
+        title_response = completion.choices[0].message.content
+        return title_response
+
     def analyze_message(self, user_message):
         date = datetime.datetime.now().strftime("%Y-%m-%d")
         
-        storage_prompt = f"""
-        Without including any explanations analyze this message and extract any factual information that should be stored in memory.
-        If there is information to store, write these details as simple sentences separated by a single space.
-        If not, respond with 'NO_DATA'. Do not include any explanations.
-        For example if user wrote their name and their job in message, you should write:
-        The user name is ...
-        The user job is ....
-        or the user hates ... 
-        or the user likes ...
-        If the user mentions that they did something, write it down along with the date of the action and information which their describe the action with.
-        Seprate the informatios with '|'
-        
-        For example: 
-        My father's name is Steve and we always play football and we enjoy alot
-        >>> The user's father's name is Steve | The user always plays football with his father and they enjoys alot
-        
-        or i'm playing guitar now
-        >>> The user played guitar on date ... 
+        extract_prompt = f"""
+        STRICT INFORMATION EXTRACTION RULES:
+        1. Extract ONLY factual, personal, or descriptive information worth storing long-term.
+        2. Format each fact as a simple, standalone sentence in the 3rd person (e.g., "The user's name is...").
+        3. If NO valuable information is found, respond EXACTLY with: 'NO_DATA'.
+        4. NEVER include explanations, notes, or variations—ONLY the extracted facts.
+        5. SEPARATE multiple facts with a single '|' (no spaces around it).
+        6. If the user mentions an action (past/present), include the date ONLY if it’s explicitly stated or implied (e.g., "yesterday" → use [{date} - 1 day]).
+        7. NEVER add standalone dates (e.g., avoid "The user sent a message on...") unless the date is PART of the fact (e.g., "The user played football on 2025-08-12").
+        8. Keep sentences SHORT and avoid fluff (e.g., "we enjoy a lot" → remove unless critical).
+        9. If the message contains code, commands, or non-storable data → 'NO_DATA'.
 
-        Avoid writing long texts and programmeing codes as information.
-        date of this message is: [{date}]
+        EXAMPLES:
+        Message: "My name is Mahdi Momeni and I played football yesterday."
+        Output: "The user's name is Mahdi Momeni | The user played football on {date}"
+
+        Message: "I love pizza and my cat is named Whiskers."
+        Output: "The user loves pizza | The user's cat is named Whiskers"
+
+        Message: "print('hello world')"
+        Output: "NO_DATA"
+
+        Message: "I'm 30 years old."
+        Output: "The user is 30 years old"
+
+        Current date: [{date}]
         Message: [{user_message}]
         """
 
         completion = self.client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct",
-            messages=[{"role": "user", "content": storage_prompt}],
+            messages=[{"role": "user", "content": extract_prompt}],
         )
         extracted_data = completion.choices[0].message.content if completion.choices[0].message.content != 'NO_DATA' else None
 
@@ -61,39 +81,41 @@ class ChatThinker:
 
         return extracted_data, retrieval_response
         
-    def create_title(self, user_message):
-        title_prompt = f"""
-        Without including any explanations, create a title for the following message.
-        The title should be a single sentence that captures the main idea of the message less than 10 words.
-        The title should be in the english language.
-        Message: {user_message}
-        """
-        completion = self.client.chat.completions.create(
-            model="meta-llama/llama-3.3-70b-instruct",
-            messages=[{"role": "user", "content": title_prompt}],
-        )
-        title_response = completion.choices[0].message.content
-        return title_response
-
-    def compare(self, old_information, new_informations):
+    def compare(self, old_information, new_information):
         compare_prompt = f"""
-        Without including any explanations, Compare these informations.
-        With preserving the structure of new information (seprating with |), only remove the repetitive informations.
-        Write new, non-duplicate information in the output without additional explanation.
-        If all new information are in old informations, respond with 'NO_DATA'. Do not include any explanations.
-        informations in memory: 
+        STRICT COMPARISON INSTRUCTIONS:
+        1. Analyze the new information piece by piece (separated by |)
+        2. For each piece in new information, check if it is COMPLETELY CONTAINED within old information
+        3. If ALL pieces from new information exist in old information, respond EXACTLY with: NO_DATA
+        4. If ANY piece is new, include ONLY the new pieces in the output
+        5. Preserve the original formatting and structure (| separation)
+        6. DO NOT include any explanations, commentary, or variations
+        7. Consider two pieces identical if their core meaning is the same, even if wording differs slightly
+        
+        EXAMPLES:
+        Information in memory: The user's name is John | The user is 30 years old
+        NEW: The user's name is John
+        RESPONSE: NO_DATA
+        
+        Information in memory: The user likes apples
+        NEW: The user likes apples | The user likes oranges
+        RESPONSE: The user likes oranges
+        ---------------------------------------------------
+        Information in memory: 
         {old_information}
 
-        new informations:
-        {new_informations}
+        New information:
+        {new_information}
         """
-        
+        print("old info:", old_information)
+        print("new info:", new_information)
         completion = self.client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct",
             messages=[{"role": "user", "content": compare_prompt}],
+            temperature=0.0  # Add this for more deterministic responses
         )
         response = completion.choices[0].message.content if completion.choices[0].message.content != "NO_DATA" else None
-        
+        print("Response:", response)
         return response
     
     def store_information(self, user_id, extracted_data):
@@ -113,7 +135,7 @@ class ChatThinker:
                     data=[search_embedding],
                     anns_field="embedding",
                     param=search_params,
-                    limit=5,
+                    limit=3,
                     output_fields=["user_id", "content"],
                     expr=f"user_id == {user_id}"
                 )
@@ -162,7 +184,7 @@ class ChatThinker:
                 data=[search_embedding],
                 anns_field="embedding",
                 param=search_params,
-                limit=5,
+                limit=3,
                 output_fields=["user_id", "content"],
                 expr=f"user_id == {user_id}"
             )
