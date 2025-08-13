@@ -1,5 +1,5 @@
 import React from "react";
-import "../sidebar.css";
+import "../styles/App.css";
 
 export default function Sidebar({ isOpen, onToggle, conversations, onSelect }) {
   return (
