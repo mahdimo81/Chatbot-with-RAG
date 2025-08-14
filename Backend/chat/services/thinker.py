@@ -3,6 +3,7 @@ from openai import OpenAI
 import datetime
 from django.apps import apps
 from sentence_transformers import SentenceTransformer
+from sympy import preview
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -66,10 +67,11 @@ class ChatThinker:
         extracted_data = completion.choices[0].message.content if completion.choices[0].message.content != 'NO_DATA' else None
 
         retrieval_prompt = f"""
-        Without including any explanations analyze this message and determine if it requires retrieving factual information from memory.
-        If yes, identify the key concepts to search for and write them as simple terms separated by a |.
-        If not, respond with 'NO_DATA'. Do not include any explanations.
-        
+        Analyze this message strictly to determine if it requires retrieving factual or personal information. 
+        If yes, identify the most specific key concepts to search for as simple terms separated by |.
+        Include requests for personal information (names, preferences, etc.) as retrievable data.
+        Only respond with the search terms or 'NO_DATA' - no explanations.
+
         Message: {user_message}
         """
 
@@ -167,6 +169,7 @@ class ChatThinker:
 
         else:
             return None
+
     def retrieve_information(self, user_id, retrieval_terms):
         if not retrieval_terms:
             return None
@@ -197,7 +200,7 @@ class ChatThinker:
 
         return information.rstrip(" | ") if information else None
 
-    def process_message(self, user_id, user_message):
+    def process_message(self, user_id, user_message, conversation):
         # Analyze message for storage and retrieval
         extracted_data, retrieval_terms = self.analyze_message(user_message)
 
@@ -208,9 +211,9 @@ class ChatThinker:
         retrieved_data = self.retrieve_information(user_id, retrieval_terms)
         
         # Generate response
-        return self.generate_response(user_message, retrieved_data)
+        return self.generate_response(user_message, conversation, retrieved_data)
 
-    def generate_response(self, user_message, retrieved_data=None):
+    def generate_response(self, user_message, conversation, retrieved_data=None):
         if retrieved_data:
             prompt = f"""
             Context from memory: {retrieved_data}
@@ -221,9 +224,21 @@ class ChatThinker:
             """
         else:
             prompt = user_message
+        
+        try:
+            separator = "<<i!***MS***!i>>"
+            conversation = conversation.split(separator)
+            previous_messages = []
+            for i in range(0, len(conversation) - 1, 2):
+                previous_messages.append({'role': 'user', 'content': conversation[i]})
+                previous_messages.append({'role': 'assistant', 'content': conversation[i+1]})
+            messages = previous_messages + [{'role': 'user', 'content': prompt}]
+        except:
+            messages = [{'role': 'user', 'content': prompt}]
+
 
         completion = self.client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct",
-            messages=[{"role": "user", "content": prompt}],
+            messages=messages,
         )
         return completion.choices[0].message.content

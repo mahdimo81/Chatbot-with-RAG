@@ -11,56 +11,75 @@ class ChatView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # Step 1: Get data from user
-        user = request.user
-        serializer = ChatInputSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
-        conversation_id = serializer.validated_data.get("conversation_id")
-        if conversation_id:
-            try:
-                conversation = Conversation.objects.get(id=conversation_id, user=user)
-            except Conversation.DoesNotExist:
-                return Response(
-                    {"detail": "Conversation not found."},
-                    status=status.HTTP_404_NOT_FOUND,
+        try:
+            # Step 1: Get and validate input data
+            user = request.user
+            serializer = ChatInputSerializer(data=request.data)
+            if not serializer.is_valid():
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            conversation_id = serializer.validated_data.get("conversation_id")
+            user_message = serializer.validated_data["message"]
+            separator = "<<i!***MS***!i>>"
+
+            # Step 2: Think about it and create response first (before any DB changes)
+            thinker = ChatThinker()
+            
+            # If this is a new conversation, generate title first
+            if not conversation_id:
+                title = thinker.create_title(user_message)
+                title_words = title.split(" ")[:10]
+                short_title = " ".join(title_words)
+            else:
+                short_title = None  # Title won't change for existing conversations
+
+            # Get existing texts if this is an existing conversation
+            existing_texts = ""
+            if conversation_id:
+                try:
+                    conversation = Conversation.objects.get(id=conversation_id, user=user)
+                    existing_texts = conversation.texts
+                except Conversation.DoesNotExist:
+                    return Response(
+                        {"detail": "Conversation not found."},
+                        status=status.HTTP_404_NOT_FOUND,
+                    )
+            
+            # Generate response
+            response_text = thinker.process_message(user.id, user_message, existing_texts)
+
+            # Step 3: Now create/update conversation with all data
+            if conversation_id:
+                # Update existing conversation
+                updated_texts = f"{existing_texts}{separator}{user_message}{separator}{response_text}"
+                conversation.texts = updated_texts
+                conversation.save()
+            else:
+                # Create new conversation only after successful response
+                texts = f"{user_message}{separator}{response_text}"
+                conversation = Conversation.objects.create(
+                    user=user,
+                    title=short_title,
+                    texts=texts
                 )
-        else:
-            conversation = Conversation.objects.create(user=user)
+            
+            # Step 4: Serialize and return response
+            conversation_serializer = ConversationSerializer(conversation)
+            return Response(
+                {
+                    "conversation": conversation_serializer.data,
+                    "response": response_text,
+                },
+                status=status.HTTP_200_OK,
+            )
 
-
-        user_message = serializer.validated_data["message"]
-        separator = "<<i!***MS***!i>>"
-
-        # Step 2: Think about it and create response
-        thinker = ChatThinker()
-        title = thinker.create_title(user_message)
-        title_words = title.split(" ")[:10]
-        conversation.title = " ".join(title_words)
-        
-        response_text = thinker.process_message(user.id, user_message)
-
-        # Step 3: Manage conversation
-        if len(conversation.texts) == 0:
-            texts = f"{user_message}{separator}{response_text}"
-            conversation.texts = texts
-            conversation.save()
-        else:
-            updated_texts = f"{conversation.texts}{separator}{user_message}{separator}{response_text}"
-            conversation.texts = updated_texts
-            conversation.save()
-        
-        # Step 4: Serialize and return response
-        conversation_serializer = ConversationSerializer(conversation)
-        return Response(
-            {
-                "conversation": conversation_serializer.data,
-                "response": response_text,
-            },
-            status=status.HTTP_200_OK,
-        )
-
+        except:
+            return Response(
+                {
+                    'detail': "An unexpected error occurred."
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 class ConversationListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -70,16 +89,22 @@ class ConversationListView(APIView):
         try:
             conversations = Conversation.objects.filter(user=user)
             serializer = ConversationSerializer(conversations, many=True)
-
+            
+            # Remove texts field from each conversation
+            conversations_data = serializer.data
+            for conversation in conversations_data:
+                if 'texts' in conversation:
+                    del conversation['texts']
+            
             return Response(
-                {"conversations": serializer.data}, status=status.HTTP_200_OK
+                {"conversations": conversations_data}, 
+                status=status.HTTP_200_OK
             )
-        except:
+        except Exception as e:
             return Response(
                 {"detail": "An unexpected error occurred."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
 
 class GetMessagesView(APIView):
     permission_classes = [IsAuthenticated]
