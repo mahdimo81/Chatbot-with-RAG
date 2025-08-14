@@ -32,6 +32,22 @@ export default function Login() {
         console.log("Login successful:", data);
         sessionStorage.setItem("access_token", data.access);
         sessionStorage.setItem("refresh_token", data.refresh);
+
+        const convResponse = await fetch("http://127.0.0.1:8000/chat/conversations/", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${data.access}`,
+          "Content-Type": "application/json",
+        },
+        });
+
+      if (convResponse.ok) {
+        const conversations = await convResponse.json();
+        sessionStorage.setItem("conversations", JSON.stringify(conversations));
+        console.log("Conversations saved:", conversations);
+        } else {
+        console.error("Error fetching conversations:", await convResponse.text());
+        }
         alert("Login successful!");
         window.location.reload();
       } else {

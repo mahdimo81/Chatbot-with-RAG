@@ -4,13 +4,27 @@ import ChatPage from "../src/components/ChatPage";
 import Auth from "../src/components/Auth";
 import "./styles/App.css";
 
-export default function App() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [conversations] = useState([
-    { id: 1, title: "Project Q&A" },
-    { id: 2, title: "Brainstorm Ideas" }
-  ]);
+async function loadConversation(id){
+  const token = sessionStorage.getItem("access_token");
+  try{
+    const res = await fetch(`http://localhost:8000/chat/get-messages/${id}`,{
+      method:"POST",
+      headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json"
+    }})
+      const data = await res.json();
+      sessionStorage.setItem("currentConv",JSON.stringify(data));
+      sessionStorage.setItem("conversationId",id);
+      window.location.reload();
+  }catch(error){
+    console.log(error)
+  }
+}
 
+export default function App() {
+  const [conversations] = useState(sessionStorage.getItem("conversations"));
+  const trimmedConv = conversations? JSON.parse(conversations).conversations:[];
   return (
   <>
     {!sessionStorage.getItem("access_token") ? (
@@ -18,10 +32,8 @@ export default function App() {
     ) : (
       <div style={{ display: "flex", height: "100vh" }}>
         <Sidebar
-          isOpen={isSidebarOpen}
-          onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
-          conversations={conversations}
-          onSelect={(id) => console.log("Selected conversation:", id)}
+          conversations={trimmedConv}
+          onSelect={loadConversation}
         />
         <div style={{ flex: 1 }}>
           <ChatPage />

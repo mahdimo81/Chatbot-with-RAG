@@ -1,7 +1,7 @@
 import React from "react";
 import "../styles/App.css";
 
-export default function Sidebar({ isOpen, onToggle, conversations, onSelect }) {
+export default function Sidebar({ conversations, onSelect }) {
   return (
     <div className={"sidebar"}>
       <div className="sidebar-content">
@@ -9,7 +9,7 @@ export default function Sidebar({ isOpen, onToggle, conversations, onSelect }) {
           <div
             key={i}
             className="conversation-item"
-            onClick={() => onSelect(conv.id)}
+            onClick={() => onSelect(conv.id,conversations)}
           >
             {conv.title || `Conversation ${i + 1}`}
           </div>
