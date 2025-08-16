@@ -11,7 +11,7 @@ class ChatThinker:
     def __init__(self):
         self.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key="",
+            api_key="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",
         )
         
     def create_title(self, user_message):

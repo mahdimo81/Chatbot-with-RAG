@@ -226,6 +226,7 @@ button:active {
 }
 
 .conversation-item {
+  position: relative;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   background: var(--bubble-user);
@@ -253,4 +254,15 @@ button:active {
 
 .sidebar-content::-webkit-scrollbar-track {
   background: transparent;
+}
+
+
+.recycle{
+  position: absolute;       
+  max-width: 20px; 
+  filter: brightness(0) invert(1);
+  right: 5px;
+  bottom: 20px;
+  cursor: pointer;
+
 }
